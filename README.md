@@ -1,5 +1,5 @@
 # RobClasses-Tool-for-SCU
-一个比较简单针对川大教务系统的抢课程序  
+一个比较简单的针对川大教务系统的抢课程序  
   
 使用须知：   
 1、使用前请确保你的 C:\Program Files\Google\Chrome\Application\chromedriver 路径下有Chrome Driver, 没有的话，请将addition里的文件移动至该目录;  
