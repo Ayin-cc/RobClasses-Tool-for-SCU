@@ -7,8 +7,11 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import sun.audio.AudioPlayer;
+import sun.audio.AudioStream;
 
 import java.time.Duration;
 import java.util.*;
@@ -238,7 +241,7 @@ public class GetCourse {
         WebElement searchButton = driver.findElement(By.id("queryButton"));
         searchButton.click();
 
-        waitForRefresh();
+        waitForRefresh(2);
     }
 
     public static boolean checkCourseId(String courseTable, String cid){
@@ -264,7 +267,7 @@ public class GetCourse {
         System.out.println("innerHtml" + courseTable);
 
         // 使用正则表达式匹配括号中的"123_01"格式的数字，并记录下匹配与输入相同的索引
-        Pattern pattern = Pattern.compile("\\((.*?)\\)");
+        Pattern pattern = Pattern.compile("\\((\\d+_\\d+)\\)");
         Matcher matcher = pattern.matcher(courseTable);
 
         Queue<Integer> matchingIndex = new LinkedList<>();
@@ -285,30 +288,59 @@ public class GetCourse {
         Matcher idMatcher = idPattern.matcher(courseTable);
 
         int checkboxIndex = 0;
+        boolean geted = false;
+
         while (idMatcher.find()) {
             checkboxIndex++;
             String checkboxId = idMatcher.group(1);
+
             if (checkboxIndex == matchingIndex.peek()) {
                 WebElement checkbox = driver.findElement(By.id(checkboxId));
                 checkbox.click();
                 matchingIndex.remove();
-                break;
+
+                // 检查是否需要验证码
+                driver.switchTo().defaultContent();
+                WebElement verification = driver.findElement(By.id("submitCode"));
+                boolean needVerification = verification.getAttribute("innerHTML").toString().contains("style=\"display: none;\"");
+                if(needVerification){
+                    inputVerification(verification);
+                }
+
+                // 提交
+                WebElement button = driver.findElement(By.id("submitButton"));
+                button.click();
+                WebElement frameElement = driver.findElement(By.id("ifra"));
+                driver.switchTo().frame(frameElement);
+
+                try {
+                    waitForRefresh(2);
+                    WebElement isGeted = driver.findElement(By.id("106812020_06"));
+                    geted = true;
+                } catch(NoSuchElementException e){
+                    // 没有成功选上，选择下一个
+                    driver.navigate().to("http://zhjw.scu.edu.cn/student/courseSelect/courseSelect/index");
+                    // 进入自由选课
+                    WebElement nfreeXk = driver.findElement(By.xpath("//li[@id='zyxk']/a"));
+                    nfreeXk.click();
+
+                    WebElement nframeElement = driver.findElement(By.id("ifra"));
+                    driver.switchTo().frame(nframeElement);
+
+                    searchCourse(driver, courseId);
+                }
+
+                if(geted){
+                    break;
+                }
             }
         }
-
-        if (matchingIndex.size() != 0) {
-            System.out.println("subscribe:" + " 错误！未找到复选框" + matchingIndex.peek().toString());
+        if(geted) {
+            return  1;
+        }
+        else{
             return -1;
         }
-
-        // 提交
-        driver.switchTo().defaultContent();
-        WebElement button = driver.findElement(By.id("submitButton"));
-        button.click();
-        WebElement frameElement = driver.findElement(By.id("ifra"));
-        driver.switchTo().frame(frameElement);
-
-        return 1;
     }
 
     public static int subscribe(WebDriver driver){
@@ -331,12 +363,28 @@ public class GetCourse {
             return -1;
         }
 
+        // 提交
+        driver.switchTo().defaultContent();
+        WebElement button = driver.findElement(By.id("submitButton"));
+        button.click();
+        WebElement frameElement = driver.findElement(By.id("ifra"));
+        driver.switchTo().frame(frameElement);
+
         return 1;
     }
 
-    public static void waitForRefresh(){
+    public static void inputVerification(WebElement verification){
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("请输入验证码：");
+        String code = scanner.nextLine();
+
+        verification.sendKeys(code);
+    }
+
+    public static void waitForRefresh(int n){
         try {
-            Thread.sleep(2000);
+            Thread.sleep(1000 * n);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
