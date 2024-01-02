@@ -15,6 +15,7 @@ import sun.audio.AudioStream;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.FileInputStream;
@@ -249,15 +250,14 @@ public class GetCourse {
         Pattern pattern = Pattern.compile("\\((.*?)\\)");
         Matcher matcher = pattern.matcher(courseTable);
 
-        if (matcher.find()) {
-            String extractedNumber = matcher.group(1);
-            System.out.println("checkCourseId: 匹配到课程: " + extractedNumber);
-        } else {
-            System.out.println("checkCourseId: 未匹配到课程");
-            return false;
+        while (matcher.find()){
+            if (matcher.group(1).equals(cid)) {
+                System.out.println("checkCourseId: 匹配到课程: " + matcher.group(1));
+                return true;
+            }
         }
-
-        return true;
+        System.out.println("checkCourseId: 未匹配到课程!");
+        return false;
     }
 
     public static int subscribe(WebDriver driver, String courseId, String[] courseNumber){
@@ -270,12 +270,14 @@ public class GetCourse {
         Matcher matcher = pattern.matcher(courseTable);
 
         Queue<Integer> matchingIndex = new LinkedList<>();
+        Map<Integer, String> courseNumIndex = new ConcurrentHashMap<>();
         int index = 0;
         while (matcher.find()) {
             index++;
             String matchedNumber = matcher.group(1);
             for(int i = 0; i < courseNumber.length; i++) {
                 if (matchedNumber.equals(courseId + "_" + courseNumber[i])) {
+                    courseNumIndex.put(index, courseNumber[i]);
                     matchingIndex.offer(index);
                     break;
                 }
@@ -317,8 +319,8 @@ public class GetCourse {
                 driver.switchTo().frame(frameElement);
 
                 try {
-                    waitForRefresh(2);
-                    WebElement isGeted = driver.findElement(By.id("106812020_06"));
+                    waitForRefresh(10);
+                    WebElement isGeted = driver.findElement(By.id(courseId + "_" + courseNumIndex.get(checkboxIndex)));
                     geted = true;
                 } catch(NoSuchElementException e){
                     // 没有成功选上，选择下一个
