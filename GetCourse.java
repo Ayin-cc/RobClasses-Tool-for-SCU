@@ -264,7 +264,6 @@ public class GetCourse {
         // 获取HTML
         WebElement courseTableDiv = driver.findElement(By.id("xirxkxkbody"));
         String courseTable = courseTableDiv.getAttribute("innerHTML").toString();
-        System.out.println("innerHtml" + courseTable);
 
         // 使用正则表达式匹配括号中的"123_01"格式的数字，并记录下匹配与输入相同的索引
         Pattern pattern = Pattern.compile("\\((\\d+_\\d+)\\)");
@@ -294,6 +293,10 @@ public class GetCourse {
             checkboxIndex++;
             String checkboxId = idMatcher.group(1);
 
+            // 判空
+            if(matchingIndex.isEmpty()){
+                break;
+            }
             if (checkboxIndex == matchingIndex.peek()) {
                 WebElement checkbox = driver.findElement(By.id(checkboxId));
                 checkbox.click();
