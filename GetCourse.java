@@ -24,6 +24,8 @@ import java.io.IOException;
 
 
 public class GetCourse {
+    public static int interval;
+
     public static void main(String[] args) {
         String loginPageUrl = "http://zhjw.scu.edu.cn/login";
         System.setProperty("webdriver.chrome.driver", "C:/Program Files/Google/Chrome/Application/chromedriver/chromedriver.exe");
@@ -47,6 +49,7 @@ public class GetCourse {
             properties.setProperty("account", account);
             properties.setProperty("password", password);
             properties.setProperty("init", "1");
+            properties.setProperty("interval", "2");
         }
 
         try (FileOutputStream fileOutputStream = new FileOutputStream("config.properties")) {
@@ -88,6 +91,8 @@ public class GetCourse {
 
         String account = properties.getProperty("account");
         String password = properties.getProperty("password");
+        interval = Integer.parseInt(properties.getProperty("interval"));
+
 
         System.out.println("请依次输入查询课程编号");
         for (int i = 0; i < N; i++) {
@@ -242,7 +247,7 @@ public class GetCourse {
         WebElement searchButton = driver.findElement(By.id("queryButton"));
         searchButton.click();
 
-        waitForRefresh(2);
+        waitForRefresh(interval);
     }
 
     public static boolean checkCourseId(String courseTable, String cid){
@@ -319,7 +324,7 @@ public class GetCourse {
                 driver.switchTo().frame(frameElement);
 
                 try {
-                    waitForRefresh(10);
+                    waitForRefresh(interval);
                     WebElement isGeted = driver.findElement(By.id(courseId + "_" + courseNumIndex.get(checkboxIndex)));
                     geted = true;
                 } catch(NoSuchElementException e){
