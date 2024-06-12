@@ -26,6 +26,9 @@ public class GetCourse {
     private int interval;
     private final static String loginPageUrl = "http://zhjw.scu.edu.cn/login";
 
+    public WebDriver getDriver(){
+        return this.driver;
+    }
 
     public GetCourse() {
         // 设置Driver
