@@ -1,9 +1,7 @@
 package com.ayin;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.io.*;
@@ -132,7 +130,7 @@ public class GetCourse {
         }
 
 
-        login(studentId, password, driver);
+        login();
         driver.navigate().to("http://zhjw.scu.edu.cn/student/courseSelect/courseSelect/index");
 
         // 进入自由选课
@@ -144,8 +142,10 @@ public class GetCourse {
 
         while(true) {
             for(int i = 0; i < cid.size(); i++) {
-                if(driver.getCurrentUrl().equals(loginPageUrl)){
-                    login(studentId, password, driver);
+                if(!driver.getCurrentUrl().contains("http://zhjw.scu.edu.cn/student/courseSelect/courseSelect/index")){
+                    if(driver.getCurrentUrl().equals(loginPageUrl)){
+                        login();
+                    }
                     driver.navigate().to("http://zhjw.scu.edu.cn/student/courseSelect/courseSelect/index");
 
                     // 进入自由选课
@@ -157,7 +157,7 @@ public class GetCourse {
                 }
 
                 // 查询课程
-                searchCourse(driver, cid.get(i));
+                searchCourse(cid.get(i));
 
                 // 查看是否可选
                 WebElement courseTableDiv = driver.findElement(By.id("xirxkxkbody"));
@@ -169,7 +169,7 @@ public class GetCourse {
                             continue;
                         }
                         // 课程可选，click复选框并提交
-                        if (subscribe(driver, cid.get(i), cnum.get(i)) == 1) {
+                        if (subscribe(cid.get(i), cnum.get(i)) == 1) {
                             N--;
                             cid.remove(i);
                         }
@@ -180,7 +180,7 @@ public class GetCourse {
                         continue;
                     }
                     // 课程可选，click复选框并提交
-                    if (subscribe(driver) == 1) {
+                    if (subscribe() == 1) {
                         System.out.println(cid.get(i) + " 已选中!");
                         N--;
                         cid.remove(i);
@@ -195,6 +195,8 @@ public class GetCourse {
 
             if (geted) {
                 System.out.println("~~~所有课程均已选上~~~");
+                System.out.println("按回车键结束...");
+                scanner.nextLine();
                 break;
             }
         }
@@ -202,7 +204,7 @@ public class GetCourse {
         driver.quit();
     }
 
-    private void login(String studentId, String password, WebDriver driver){
+    private void login(){
         Scanner scanner = new Scanner(System.in);
         while(true) {
             System.out.println("输入验证码：");
@@ -230,7 +232,7 @@ public class GetCourse {
 
     }
 
-    private boolean checkTime(WebDriver driver){
+    private boolean checkTime(){
         // 获取HTML
         WebElement element = driver.findElement(By.id("page-content-template"));
         String htmlContent = element.getAttribute("innerHTML").toString();
@@ -243,7 +245,7 @@ public class GetCourse {
         }
     }
 
-    private void searchCourse(WebDriver driver, String cid){
+    private void searchCourse(String cid){
         // 输入课程编号
         WebElement courseNumberInput = driver.findElement(By.id("kch"));
         courseNumberInput.clear();
@@ -253,7 +255,7 @@ public class GetCourse {
         WebElement searchButton = driver.findElement(By.id("queryButton"));
         searchButton.click();
 
-        waitForRefresh(interval);
+        waitForRefresh();
     }
 
     private boolean checkCourseId(String courseTable, String cid){
@@ -272,7 +274,7 @@ public class GetCourse {
         return true;
     }
 
-    private int subscribe(WebDriver driver, String courseId, String[] courseNumber){
+    private int subscribe(String courseId, String[] courseNumber){
         Scanner scanner = new Scanner(System.in);
         // 获取HTML
         WebElement courseTableDiv = driver.findElement(By.id("xirxkxkbody"));
@@ -302,47 +304,60 @@ public class GetCourse {
         }
         else{
             System.out.println("subscribe: " + "未找到符合要求的课程" + courseId);
-            searchCourse(driver, courseId);
+            searchCourse(courseId);
             return -1;
         }
-
-
 
         // 使用正则表达式匹配复选框的id，并根据索引进行勾选
         Pattern idPattern = Pattern.compile("id=\"(.*?)\"");
         Matcher idMatcher = idPattern.matcher(courseTable);
 
         int checkboxIndex = 0;
-        boolean geted = false;
 
         while (idMatcher.find()) {
             checkboxIndex++;
             String checkboxId = idMatcher.group(1);
 
             if (checkboxIndex == matchingIndex.peek()) {
-                WebElement checkbox = driver.findElement(By.id(checkboxId));
+                WebElement checkbox = driver.findElement(By.xpath("//*[@id='" + checkboxId + "']/.."));
                 checkbox.click();
                 matchingIndex.remove();
 
-                // 检查是否需要验证码
+                // 提交
                 driver.switchTo().defaultContent();
-                WebElement verification = driver.findElement(By.id("submitCode"));
-                boolean needVerification = verification.getAttribute("innerHTML").toString().contains("style=\"display: none;\"");
-                if(needVerification){
-                    inputVerification(verification);
+                WebElement button = driver.findElement(By.id("submitButton"));
+                // 判断是否需要验证码
+                try {
+                    while (true){
+                        WebElement verify = driver.findElement(By.id("submitCode"));
+                        System.out.println("输入验证码: ");
+                        String code = scanner.nextLine();
+                        verify.sendKeys(code);
+                        button.click();
+                        try {
+                            waitForRefresh(2000);
+                            WebElement err = driver.findElement(By.id("submitCode"));
+                            System.out.println("验证码错误，请重新输入: ");
+                            verify.clear();
+                        } catch (NoSuchElementException e) {
+                            break;
+                        }
+                    }
+                } catch (NoSuchElementException e){
+                    button.click();
                 }
 
-                // 提交
-                WebElement button = driver.findElement(By.id("submitButton"));
-                button.click();
-                WebElement frameElement = driver.findElement(By.id("ifra"));
-                driver.switchTo().frame(frameElement);
+                // 判断是否选中
+                waitForRefresh(2000);
+                WebElement msgLabel = driver.findElement(By.xpath("//*[@id='xkresult']"));
+                String msg = msgLabel.getText();
 
-                try {
-                    waitForRefresh(interval);
-                    WebElement isGeted = driver.findElement(By.id("106812020_06"));
-                    geted = true;
-                } catch(NoSuchElementException e){
+                if(msg.contains("选课成功")) {
+                    waitForRefresh();
+                    return 1;
+                }
+                else {
+                    System.out.println(msg);
                     // 跳转回自由选课界面
                     driver.navigate().to("http://zhjw.scu.edu.cn/student/courseSelect/courseSelect/index");
                     // 进入自由选课
@@ -355,36 +370,26 @@ public class GetCourse {
                     // 根据队列情况判读选择下一个还是重新查询
                     if(matchingIndex.isEmpty()){
                         // 若为空，则重新查询
-                        System.out.println("subscribe: 选取失败！请检查课程时间是否冲突, 按任意键重新查询...");
+                        System.out.println("subscribe: 选取失败！按回车键重新查询...");
                         scanner.nextLine();
-                        searchCourse(driver, courseId);
-                        subscribe(driver, courseId, courseNumber);
+                        searchCourse(courseId);
+                        subscribe(courseId, courseNumber);
                     }
                     else{
                         // 不空，则查询下一个课序号
                         System.out.println("subscribe: 选取失败！尝试选择下一课序号。");
-                        searchCourse(driver, courseId);
+                        searchCourse(courseId);
                     }
-                }
-
-                if(geted){
-                    break;
                 }
             }
         }
-        if(geted) {
-            return  1;
-        }
-        else{
-            return -1;
-        }
+        return -1;
     }
 
-    private int subscribe(WebDriver driver){
+    private int subscribe(){
         // 获取HTML
         WebElement courseTableDiv = driver.findElement(By.id("xirxkxkbody"));
         String courseTable = courseTableDiv.getAttribute("innerHTML").toString();
-        System.out.println("innerHtml" + courseTable);
 
         // 使用正则表达式匹配复选框的id，并勾选查询到的第一个
         Pattern idPattern = Pattern.compile("id=\"(.*?)\"");
@@ -392,7 +397,11 @@ public class GetCourse {
 
         if(idMatcher.find()){
             String checkboxId = idMatcher.group(1);
-            WebElement checkbox = driver.findElement(By.id(checkboxId));
+            WebElement checkbox = driver.findElement(By.xpath("//*[@id='" + checkboxId + "']/.."));
+
+            if (!checkbox.isDisplayed()) {
+                ((JavascriptExecutor)driver).executeScript("arguments[0].scrollIntoView(true);", checkbox);
+            }
             checkbox.click();
         }
         else{
@@ -403,20 +412,44 @@ public class GetCourse {
         // 提交
         driver.switchTo().defaultContent();
         WebElement button = driver.findElement(By.id("submitButton"));
-        button.click();
-        WebElement frameElement = driver.findElement(By.id("ifra"));
-        driver.switchTo().frame(frameElement);
+        // 判断是否需要验证码
+        try {
+            while (true){
+                WebElement verify = driver.findElement(By.id("submitCode"));
+                System.out.println("输入验证码: ");
+                String code = scanner.nextLine();
+                verify.sendKeys(code);
+                button.click();
+                try {
+                    waitForRefresh(2000);
+                    WebElement err = driver.findElement(By.id("submitCode"));
+                    System.out.println("验证码错误，请重新输入: ");
+                    verify.clear();
+                } catch (NoSuchElementException e) {
+                    break;
+                }
+            }
+        } catch (NoSuchElementException e){
+            button.click();
+        }
 
-        return 1;
+        // 判断是否选中
+        waitForRefresh(2000);
+        WebElement msgLabel = driver.findElement(By.xpath("//*[@id='xkresult']"));
+        String msg = msgLabel.getText();
+        if(msg.contains("选课成功")){
+            return 1;
+        }
+        System.out.println(msg);
+        return -1;
     }
 
-    private void inputVerification(WebElement verification){
-        Scanner scanner = new Scanner(System.in);
-
-        System.out.println("请输入验证码：");
-        String code = scanner.nextLine();
-
-        verification.sendKeys(code);
+    private void waitForRefresh(){
+        try {
+            Thread.sleep(interval);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void waitForRefresh(int n){
