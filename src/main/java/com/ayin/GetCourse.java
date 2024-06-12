@@ -29,7 +29,7 @@ public class GetCourse {
 
     public GetCourse() {
         // 设置Driver
-        System.setProperty("webdriver.chrome.driver", "C:/Program Files/Google/Chrome/Application/chromedriver/chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "C:\\Program Files\\Google\\Chrome\\Application\\chromedriver\\chromedriver.exe");
 
         // 加载属性文件
         try (FileInputStream fileInputStream = new FileInputStream(this.getClass().getClassLoader().getResource("config.properties").getPath())) {
@@ -57,14 +57,21 @@ public class GetCourse {
             e.printStackTrace();
         }
         if(properties.getProperty("init").equals("0")){
-            System.out.println("请输入学号：");
-            String studentId = scanner.nextLine();
-            System.out.println("请输入密码：");
-            String password = scanner.nextLine();
-            properties.setProperty("studentId", studentId);
-            properties.setProperty("password", password);
-            properties.setProperty("init", "1");
-            properties.setProperty("interval", "2000");
+            try {
+                FileOutputStream fileOutputStream = new FileOutputStream("config.properties");
+                System.out.println("请输入学号：");
+                String studentId = scanner.nextLine();
+                System.out.println("请输入密码：");
+                String password = scanner.nextLine();
+                properties.setProperty("studentId", studentId);
+                properties.setProperty("password", password);
+                properties.setProperty("init", "1");
+                properties.setProperty("interval", "2000");
+                properties.store(fileOutputStream, "Default properties");
+            } catch (Exception e) {
+                System.out.println("配置初始化失败");
+                return;
+            }
         }
         this.studentId = properties.getProperty("studentId");
         this.password = properties.getProperty("password");
@@ -153,23 +160,23 @@ public class GetCourse {
                 WebElement courseTableDiv = driver.findElement(By.id("xirxkxkbody"));
                 String courseTable = courseTableDiv.getText();
 
-                if(defaultNum.get(i) == 0) {
+                if(defaultNum.get(i) == 0) {  // 非默认课序号
                     for (int j = 0; j < cnum.get(i).length; j++) {
                         if (!checkCourseId(courseTable, cid.get(i))) {
                             continue;
-                        } else {
-                            // 课程可选，click复选框并提交
-                            if (subscribe(driver, cid.get(i), cnum.get(i)) == 1) {
-                                System.out.println(cid.get(i) + " 已选中，按下任意键继续...");
-                                scanner.nextLine();
-
-                                N--;
-                                cid.remove(i);
-                            }
+                        }
+                        // 课程可选，click复选框并提交
+                        if (subscribe(driver, cid.get(i), cnum.get(i)) == 1) {
+                            N--;
+                            cid.remove(i);
                         }
                     }
                 }
-                else{
+                else{  // 默认课序号
+                    if (!checkCourseId(courseTable, cid.get(i))){
+                        continue;
+                    }
+                    // 课程可选，click复选框并提交
                     if (subscribe(driver) == 1) {
                         System.out.println(cid.get(i) + " 已选中!");
                         N--;
@@ -177,6 +184,7 @@ public class GetCourse {
                     }
                 }
 
+                // 是否全部选中
                 if(cid.size() == 0){
                     geted = true;
                 }
