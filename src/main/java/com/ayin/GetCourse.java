@@ -29,7 +29,7 @@ public class GetCourse {
 
     public GetCourse() {
         // 设置Driver
-        System.setProperty("webdriver.chrome.driver", "C:/Program Files/Google/Chrome/com.ayin.Application/chromedriver/chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "C:/Program Files/Google/Chrome/Application/chromedriver/chromedriver.exe");
 
         // 加载属性文件
         try (FileInputStream fileInputStream = new FileInputStream(this.getClass().getClassLoader().getResource("config.properties").getPath())) {
