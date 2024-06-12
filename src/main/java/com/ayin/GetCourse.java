@@ -1,18 +1,15 @@
 package com.ayin;
 
-import graphql.org.antlr.v4.runtime.misc.IntegerList;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.NoSuchElementException;
 
-import java.io.FileOutputStream;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.io.FileInputStream;
-import java.io.IOException;
 
 
 public class GetCourse {
@@ -22,7 +19,7 @@ public class GetCourse {
     private List<String> cid = new ArrayList<>();  // 课程编号
     private List<String[]> cnum = new ArrayList<>();  // 课序号
     private boolean geted = false;
-    private IntegerList defaultNum = new IntegerList();  // 是否使用默认课序号，即查询结果第一个
+    private List<Integer> defaultNum = new ArrayList<>();  // 是否使用默认课序号，即查询结果第一个
     private Properties properties = new Properties();
     private String studentId;
     private String password;
@@ -35,8 +32,27 @@ public class GetCourse {
         System.setProperty("webdriver.chrome.driver", "C:/Program Files/Google/Chrome/com.ayin.Application/chromedriver/chromedriver.exe");
 
         // 加载属性文件
-        try (FileInputStream fileInputStream = new FileInputStream("config.properties")) {
+        try (FileInputStream fileInputStream = new FileInputStream(this.getClass().getClassLoader().getResource("config.properties").getPath())) {
             properties.load(fileInputStream);
+        } catch (FileNotFoundException e){
+            System.out.println("配置文件不存在，将创建新的属性文件并读入");
+            try {
+                File file = new File("config.properties");
+                file.createNewFile();
+                // 写入默认属性
+                properties.setProperty("studentId", "0");
+                properties.setProperty("password", "0");
+                properties.setProperty("init", "0");
+                properties.setProperty("interval", "0");
+                // 写入到新的属性文件
+                try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+                    properties.store(fileOutputStream, "Default properties");
+                }
+                // 重新加载属性文件
+                properties.load(new FileInputStream(file));
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -69,10 +85,10 @@ public class GetCourse {
 
             if (N == 0) {
                 System.out.println("请输入学号：");
-                String account = scanner.nextLine();
+                String studentId = scanner.nextLine();
                 System.out.println("请输入密码：");
                 String password = scanner.nextLine();
-                properties.setProperty("account", account);
+                properties.setProperty("studentId", studentId);
                 properties.setProperty("password", password);
 
                 try (FileOutputStream fileOutputStream = new FileOutputStream("config.properties")) {
@@ -175,17 +191,17 @@ public class GetCourse {
         driver.quit();
     }
 
-    private void login(String account, String password, WebDriver driver){
+    private void login(String studentId, String password, WebDriver driver){
         Scanner scanner = new Scanner(System.in);
         while(true) {
             System.out.println("输入验证码：");
             String verification = scanner.nextLine();
 
-            WebElement accountInput = driver.findElement(By.id("input_username"));
+            WebElement studentIdInput = driver.findElement(By.id("input_username"));
             WebElement passwordInput = driver.findElement(By.id("input_password"));
             WebElement verificationInput = driver.findElement(By.id("input_checkcode"));
 
-            accountInput.sendKeys(account);
+            studentIdInput.sendKeys(studentId);
             passwordInput.sendKeys(password);
             verificationInput.sendKeys(verification);
 
