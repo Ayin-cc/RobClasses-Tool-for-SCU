@@ -165,7 +165,7 @@ public class GetCourse {
 
                 if(defaultNum.get(i) == 0) {  // 非默认课序号
                     for (int j = 0; j < cnum.get(i).length; j++) {
-                        if (!checkCourseId(courseTable, cid.get(i))) {
+                        if (!checkCourseId(courseTable, cid.get(i), i)) {
                             continue;
                         }
                         // 课程可选，click复选框并提交
@@ -176,7 +176,7 @@ public class GetCourse {
                     }
                 }
                 else{  // 默认课序号
-                    if (!checkCourseId(courseTable, cid.get(i))){
+                    if (!checkCourseId(courseTable, cid.get(i), i)){
                         continue;
                     }
                     // 课程可选，click复选框并提交
@@ -258,7 +258,7 @@ public class GetCourse {
         waitForRefresh();
     }
 
-    private boolean checkCourseId(String courseTable, String cid){
+    private boolean checkCourseId(String courseTable, String cid, int i){
         // 正则表达式匹配课程编号
         Pattern pattern = Pattern.compile("\\((.*?)\\)");
         Matcher matcher = pattern.matcher(courseTable);
@@ -267,7 +267,7 @@ public class GetCourse {
             String extractedNumber = matcher.group(1);
             System.out.println("checkCourseId: 匹配到课程: " + cid);
         } else {
-            System.out.println("checkCourseId: 未匹配到课程");
+            System.out.println("checkCourseId: 未匹配到第" + (i + 1) + "个课程: " + cid);
             return false;
         }
 
