@@ -1,5 +1,9 @@
 # RobClasses-Tool-for-SCU
 一个简单的针对川大教务系统的抢课程序  
+使用java8运行
+```shell
+java -jar RobClasses-Tool-for-SCU-1.3.jar
+```
 
 ### 使用须知：   
 1、使用前请确保你的 `C:\Program Files\Google\Chrome\chromedriver\` 路径下有Chrome Driver, 没有的话，请前往[ChromeDriver](https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json)下载相应版本; 同时，确保电脑上有Chrome浏览器;  
@@ -11,7 +15,6 @@
 
 ![](./demo.png)
 
-<br/>
 
 ### 常见错误
 1、ChromeDriver版本不匹配，请前往[ChromeDriver](https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json)下载相应版本（框选住的部分即为所需版本）
